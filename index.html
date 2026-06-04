@@ -86,6 +86,13 @@
             refreshDashboard();
         }
 
+        function deleteTransaction(id) {
+            if (confirm('Delete this transaction?')) {
+                transactions = transactions.filter(t => t.id !== id);
+                saveAndRefresh();
+            }
+        }
+
         function refreshDashboard() {
             const selectedMonth = document.getElementById('monthSelector').value;
             const filtered = transactions.filter(t => t.date.startsWith(selectedMonth));
