@@ -31,11 +31,13 @@
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div class="glass p-6 rounded-2xl">
                 <p class="text-xs text-slate-400 uppercase tracking-widest mb-2">Saldo Cash</p>
-                <input type="number" id="balanceCash" value="0" onchange="saveBalances()" class="w-full bg-transparent text-3xl font-bold text-white outline-none">
+                <input type="text" id="displayCash" onfocus="switchToInput('cash')" class="w-full bg-transparent text-3xl font-bold text-white outline-none cursor-pointer">
+                <input type="number" id="inputCash" class="hidden w-full bg-slate-800 text-3xl font-bold text-white outline-none p-2 rounded" onblur="saveAndFormat('cash')">
             </div>
             <div class="glass p-6 rounded-2xl">
                 <p class="text-xs text-slate-400 uppercase tracking-widest mb-2">Saldo QRIS</p>
-                <input type="number" id="balanceQRIS" value="0" onchange="saveBalances()" class="w-full bg-transparent text-3xl font-bold text-white outline-none">
+                <input type="text" id="displayQRIS" onfocus="switchToInput('qris')" class="w-full bg-transparent text-3xl font-bold text-white outline-none cursor-pointer">
+                <input type="number" id="inputQRIS" class="hidden w-full bg-slate-800 text-3xl font-bold text-white outline-none p-2 rounded" onblur="saveAndFormat('qris')">
             </div>
         </div>
 
@@ -83,13 +85,38 @@
         let balances = JSON.parse(localStorage.getItem('skyzone_balances')) || { cash: 0, qris: 0 };
         let dailyChartInstance, revenueChartInstance;
 
-        document.getElementById('balanceCash').value = balances.cash;
-        document.getElementById('balanceQRIS').value = balances.qris;
+        function formatRupiah(num) {
+            return 'Rp ' + Math.floor(num).toLocaleString('id-ID');
+        }
 
-        function saveBalances() {
-            balances.cash = parseFloat(document.getElementById('balanceCash').value) || 0;
-            balances.qris = parseFloat(document.getElementById('balanceQRIS').value) || 0;
-            localStorage.setItem('skyzone_balances', JSON.stringify(balances));
+        function updateBalanceDisplay() {
+            document.getElementById('displayCash').value = formatRupiah(balances.cash);
+            document.getElementById('displayQRIS').value = formatRupiah(balances.qris);
+            document.getElementById('inputCash').value = balances.cash;
+            document.getElementById('inputQRIS').value = balances.qris;
+        }
+
+        function switchToInput(type) {
+            const displayEl = document.getElementById('display' + type.charAt(0).toUpperCase() + type.slice(1));
+            const inputEl = document.getElementById('input' + type.charAt(0).toUpperCase() + type.slice(1));
+            
+            if (displayEl && inputEl) {
+                displayEl.classList.add('hidden');
+                inputEl.classList.remove('hidden');
+                inputEl.focus();
+            }
+        }
+
+        function saveAndFormat(type) {
+            const inputEl = document.getElementById('input' + type.charAt(0).toUpperCase() + type.slice(1));
+            if (inputEl) {
+                balances[type] = parseFloat(inputEl.value) || 0;
+                localStorage.setItem('skyzone_balances', JSON.stringify(balances));
+                updateBalanceDisplay();
+            }
+            
+            document.getElementById('display' + type.charAt(0).toUpperCase() + type.slice(1)).classList.remove('hidden');
+            inputEl.classList.add('hidden');
         }
 
         function saveAndRefresh() {
@@ -115,9 +142,9 @@
         function updateKPIs(data) {
             let inc = 0, exp = 0;
             data.forEach(t => t.type === 'income' ? inc += t.amount : exp += t.amount);
-            document.getElementById('kpi-net-profit').textContent = 'Rp ' + (inc - exp).toLocaleString();
-            document.getElementById('kpi-total-income').textContent = 'Rp ' + inc.toLocaleString();
-            document.getElementById('kpi-total-expense').textContent = 'Rp ' + exp.toLocaleString();
+            document.getElementById('kpi-net-profit').textContent = formatRupiah(inc - exp);
+            document.getElementById('kpi-total-income').textContent = formatRupiah(inc);
+            document.getElementById('kpi-total-expense').textContent = formatRupiah(exp);
             document.getElementById('kpi-total-trx').textContent = data.length;
         }
 
@@ -127,7 +154,7 @@
                 <tr class="border-b border-white/5 hover:bg-white/5 transition">
                     <td class="p-4">${t.date}</td>
                     <td class="p-4 text-white">${t.description}</td>
-                    <td class="p-4 text-right ${t.type === 'income' ? 'text-emerald-400' : 'text-rose-400'}">${t.type === 'income' ? '+' : '-'} Rp ${t.amount.toLocaleString()}</td>
+                    <td class="p-4 text-right ${t.type === 'income' ? 'text-emerald-400' : 'text-rose-400'}">${t.type === 'income' ? '+' : '-'} Rp ${t.amount.toLocaleString('id-ID')}</td>
                     <td class="p-4 text-center"><button onclick="deleteTransaction(${t.id})" class="text-slate-500 hover:text-rose-400 transition"><i class="fa-solid fa-trash"></i></button></td>
                 </tr>
             `).join('');
@@ -189,6 +216,7 @@
 
         document.getElementById('date').value = new Date().toISOString().split('T')[0];
         updateCategories();
+        updateBalanceDisplay();
         refreshDashboard();
     </script>
 </body>
