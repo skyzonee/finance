@@ -1,76 +1,77 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="id">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SKYZONE GAMING STATION - Cash Management</title>
+    <title>Skyzone Dashboard Premium</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    colors: {
-                        midnight: '#0f172a',
-                        midnightLight: '#1e293b',
-                        midnightBorder: '#334155', 
-                        brandYellow: '#facc15',
-                        brandYellowHover: '#eab308'
-                    }
-                }
-            }
-        }
-    </script>
     <style>
-        body { font-family: 'Inter', sans-serif; }
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;600;700&display=swap');
+        body { font-family: 'Plus Jakarta Sans', sans-serif; background: #080b12; color: #e2e8f0; }
+        .glass { background: rgba(30, 41, 59, 0.5); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.05); }
     </style>
 </head>
-<body class="bg-midnight text-slate-200 min-h-screen flex flex-col">
+<body class="min-h-screen">
 
-    <nav class="bg-midnightLight border-b border-midnightBorder sticky top-0 z-50 shadow-md">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+    <nav class="sticky top-0 z-50 glass border-b border-white/10">
+        <div class="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
             <div class="flex items-center gap-3">
-                <div class="bg-brandYellow text-midnight p-2 rounded-lg"><i class="fa-solid fa-gamepad"></i></div>
-                <h1 class="text-xl font-bold text-white">SKYZONE<span class="text-brandYellow"> DASHBOARD</span></h1>
+                <div class="bg-yellow-400 text-slate-900 p-2.5 rounded-xl shadow-lg shadow-yellow-400/20"><i class="fa-solid fa-gamepad"></i></div>
+                <h1 class="text-2xl font-bold tracking-tight text-white">SKYZONE<span class="text-yellow-400"> PRO</span></h1>
             </div>
-            <select id="monthSelector" onchange="refreshDashboard()" class="bg-midnight border border-midnightBorder text-white rounded-lg px-3 py-1.5 focus:ring-2 focus:ring-brandYellow">
+            <select id="monthSelector" onchange="refreshDashboard()" class="bg-slate-900 border border-white/10 rounded-xl px-4 py-2 text-sm text-slate-300 focus:ring-2 focus:ring-yellow-400 outline-none">
             </select>
         </div>
     </nav>
 
-    <main class="flex-grow max-w-7xl mx-auto px-4 py-8 w-full space-y-6">
-        <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
-            <div class="bg-midnightLight p-6 rounded-xl border-l-4 border-brandYellow"><p class="text-xs text-slate-400">Net Profit</p><h3 class="text-xl font-bold text-white" id="kpi-net-profit">Rp 0</h3></div>
-            <div class="bg-midnightLight p-6 rounded-xl border-l-4 border-green-500"><p class="text-xs text-slate-400">Income</p><h3 class="text-xl font-bold text-green-400" id="kpi-total-income">Rp 0</h3></div>
-            <div class="bg-midnightLight p-6 rounded-xl border-l-4 border-red-500"><p class="text-xs text-slate-400">Expenses</p><h3 class="text-xl font-bold text-red-400" id="kpi-total-expense">Rp 0</h3></div>
-            <div class="bg-midnightLight p-6 rounded-xl border-l-4 border-blue-500"><p class="text-xs text-slate-400">Transactions</p><h3 class="text-xl font-bold text-blue-400" id="kpi-total-trx">0</h3></div>
+    <main class="max-w-7xl mx-auto px-6 py-8 space-y-8">
+        <!-- Saldo Panel -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div class="glass p-6 rounded-2xl">
+                <p class="text-xs text-slate-400 uppercase tracking-widest mb-2">Saldo Cash</p>
+                <input type="number" id="balanceCash" value="0" onchange="saveBalances()" class="w-full bg-transparent text-3xl font-bold text-white outline-none">
+            </div>
+            <div class="glass p-6 rounded-2xl">
+                <p class="text-xs text-slate-400 uppercase tracking-widest mb-2">Saldo QRIS</p>
+                <input type="number" id="balanceQRIS" value="0" onchange="saveBalances()" class="w-full bg-transparent text-3xl font-bold text-white outline-none">
+            </div>
         </div>
 
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <div class="bg-midnightLight rounded-xl p-6 border border-midnightBorder lg:col-span-2 h-80"><canvas id="dailyChart"></canvas></div>
-            <div class="bg-midnightLight rounded-xl p-6 border border-midnightBorder h-80"><canvas id="revenueChart"></canvas></div>
+        <!-- KPI Grid -->
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div class="glass p-5 rounded-2xl"><p class="text-xs text-slate-400 mb-1">Profit</p><h3 class="text-lg font-bold" id="kpi-net-profit">Rp 0</h3></div>
+            <div class="glass p-5 rounded-2xl"><p class="text-xs text-slate-400 mb-1">Income</p><h3 class="text-lg font-bold text-emerald-400" id="kpi-total-income">Rp 0</h3></div>
+            <div class="glass p-5 rounded-2xl"><p class="text-xs text-slate-400 mb-1">Expense</p><h3 class="text-lg font-bold text-rose-400" id="kpi-total-expense">Rp 0</h3></div>
+            <div class="glass p-5 rounded-2xl"><p class="text-xs text-slate-400 mb-1">Trx Count</p><h3 class="text-lg font-bold text-sky-400" id="kpi-total-trx">0</h3></div>
         </div>
 
+        <!-- Charts -->
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <div class="bg-midnightLight rounded-xl p-6 border border-midnightBorder">
-                <h2 class="font-bold text-white mb-4">Add Transaction</h2>
-                <form id="transactionForm" class="space-y-3">
-                    <div class="flex gap-2">
-                        <label class="flex-1 text-center py-2 bg-midnight rounded cursor-pointer border border-midnightBorder has-[:checked]:border-brandYellow"><input type="radio" name="type" value="income" checked class="hidden" onchange="updateCategories()"> Income</label>
-                        <label class="flex-1 text-center py-2 bg-midnight rounded cursor-pointer border border-midnightBorder has-[:checked]:border-brandYellow"><input type="radio" name="type" value="expense" class="hidden" onchange="updateCategories()"> Expense</label>
+            <div class="glass p-6 rounded-2xl lg:col-span-2 h-80"><canvas id="dailyChart"></canvas></div>
+            <div class="glass p-6 rounded-2xl h-80"><canvas id="revenueChart"></canvas></div>
+        </div>
+
+        <!-- Form & Table -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div class="glass p-6 rounded-2xl">
+                <h2 class="font-bold text-white mb-6">Tambah Transaksi</h2>
+                <form id="transactionForm" class="space-y-4">
+                    <div class="flex gap-2 p-1 bg-slate-900 rounded-xl border border-white/5">
+                        <label class="flex-1 text-center py-2 text-sm font-medium rounded-lg cursor-pointer hover:bg-slate-800 has-[:checked]:bg-yellow-400 has-[:checked]:text-slate-900 transition"><input type="radio" name="type" value="income" checked class="hidden" onchange="updateCategories()"> Income</label>
+                        <label class="flex-1 text-center py-2 text-sm font-medium rounded-lg cursor-pointer hover:bg-slate-800 has-[:checked]:bg-rose-500 has-[:checked]:text-white transition"><input type="radio" name="type" value="expense" class="hidden" onchange="updateCategories()"> Expense</label>
                     </div>
-                    <select id="category" class="w-full bg-midnight border border-midnightBorder p-2 rounded text-white"></select>
-                    <input type="number" id="amount" placeholder="Amount (Rp)" class="w-full bg-midnight border border-midnightBorder p-2 rounded text-white" required>
-                    <input type="date" id="date" class="w-full bg-midnight border border-midnightBorder p-2 rounded text-white" required>
-                    <textarea id="description" placeholder="Description" class="w-full bg-midnight border border-midnightBorder p-2 rounded text-white" required></textarea>
-                    <button class="w-full bg-brandYellow text-midnight font-bold py-2 rounded">Save</button>
+                    <select id="category" class="w-full bg-slate-900 border border-white/10 p-3 rounded-xl text-white outline-none focus:border-yellow-400"></select>
+                    <input type="number" id="amount" placeholder="Nominal (Rp)" class="w-full bg-slate-900 border border-white/10 p-3 rounded-xl text-white outline-none" required>
+                    <input type="date" id="date" class="w-full bg-slate-900 border border-white/10 p-3 rounded-xl text-white outline-none" required>
+                    <textarea id="description" placeholder="Catatan..." class="w-full bg-slate-900 border border-white/10 p-3 rounded-xl text-white outline-none"></textarea>
+                    <button class="w-full bg-yellow-400 hover:bg-yellow-500 text-slate-900 font-bold py-3 rounded-xl transition">Simpan Transaksi</button>
                 </form>
             </div>
-            <div class="lg:col-span-2 bg-midnightLight rounded-xl border border-midnightBorder overflow-hidden">
-                <table class="w-full text-left">
-                    <thead class="bg-midnight"><tr><th class="p-4 text-xs uppercase text-slate-400">Date</th><th class="p-4 text-xs uppercase text-slate-400">Desc</th><th class="p-4 text-xs uppercase text-slate-400 text-right">Amount</th><th class="p-4 text-xs uppercase text-slate-400 text-center">Action</th></tr></thead>
+            <div class="lg:col-span-2 glass rounded-2xl overflow-hidden">
+                <table class="w-full text-sm">
+                    <thead class="bg-white/5 border-b border-white/10 text-slate-400"><tr><th class="p-4 text-left">Tanggal</th><th class="p-4 text-left">Deskripsi</th><th class="p-4 text-right">Nominal</th><th class="p-4 text-center">Aksi</th></tr></thead>
                     <tbody id="transactionTableBody"></tbody>
                 </table>
             </div>
@@ -79,7 +80,17 @@
 
     <script>
         let transactions = JSON.parse(localStorage.getItem('skyzone_transactions')) || [];
+        let balances = JSON.parse(localStorage.getItem('skyzone_balances')) || { cash: 0, qris: 0 };
         let dailyChartInstance, revenueChartInstance;
+
+        document.getElementById('balanceCash').value = balances.cash;
+        document.getElementById('balanceQRIS').value = balances.qris;
+
+        function saveBalances() {
+            balances.cash = parseFloat(document.getElementById('balanceCash').value) || 0;
+            balances.qris = parseFloat(document.getElementById('balanceQRIS').value) || 0;
+            localStorage.setItem('skyzone_balances', JSON.stringify(balances));
+        }
 
         function saveAndRefresh() {
             localStorage.setItem('skyzone_transactions', JSON.stringify(transactions));
@@ -87,7 +98,7 @@
         }
 
         function deleteTransaction(id) {
-            if (confirm('Delete this transaction?')) {
+            if (confirm('Hapus transaksi ini?')) {
                 transactions = transactions.filter(t => t.id !== id);
                 saveAndRefresh();
             }
@@ -113,13 +124,11 @@
         function renderTable(data) {
             const tbody = document.getElementById('transactionTableBody');
             tbody.innerHTML = data.sort((a,b) => new Date(b.date) - new Date(a.date)).map(t => `
-                <tr class="border-t border-midnightBorder">
+                <tr class="border-b border-white/5 hover:bg-white/5 transition">
                     <td class="p-4">${t.date}</td>
-                    <td class="p-4">${t.description}</td>
-                    <td class="p-4 text-right ${t.type === 'income' ? 'text-green-400' : 'text-red-400'}">${t.type === 'income' ? '+' : '-'} Rp ${t.amount.toLocaleString()}</td>
-                    <td class="p-4 text-center">
-                        <button onclick="deleteTransaction(${t.id})" class="text-slate-500 hover:text-red-500 transition"><i class="fa-solid fa-trash"></i></button>
-                    </td>
+                    <td class="p-4 text-white">${t.description}</td>
+                    <td class="p-4 text-right ${t.type === 'income' ? 'text-emerald-400' : 'text-rose-400'}">${t.type === 'income' ? '+' : '-'} Rp ${t.amount.toLocaleString()}</td>
+                    <td class="p-4 text-center"><button onclick="deleteTransaction(${t.id})" class="text-slate-500 hover:text-rose-400 transition"><i class="fa-solid fa-trash"></i></button></td>
                 </tr>
             `).join('');
         }
@@ -134,7 +143,6 @@
             const dailyExpense = new Array(daysInMonth).fill(0);
 
             let psTotal = 0, fnbTotal = 0;
-
             data.forEach(t => {
                 const day = parseInt(t.date.split('-')[2]);
                 if (t.type === 'income') {
@@ -148,14 +156,14 @@
 
             dailyChartInstance = new Chart(document.getElementById('dailyChart'), {
                 type: 'bar',
-                data: { labels: Array.from({length: daysInMonth}, (_, i) => i + 1), datasets: [{ label: 'Income', data: dailyIncome, backgroundColor: '#22c55e' }, { label: 'Expense', data: dailyExpense, backgroundColor: '#ef4444' }] },
-                options: { maintainAspectRatio: false, plugins: { title: { display: true, text: 'Daily Performance', color: '#fff' } } }
+                data: { labels: Array.from({length: daysInMonth}, (_, i) => i + 1), datasets: [{ label: 'Income', data: dailyIncome, backgroundColor: '#10b981' }, { label: 'Expense', data: dailyExpense, backgroundColor: '#f43f5e' }] },
+                options: { maintainAspectRatio: false, plugins: { legend: { labels: { color: '#94a3b8' } } } }
             });
 
             revenueChartInstance = new Chart(document.getElementById('revenueChart'), {
                 type: 'bar',
-                data: { labels: ['PlayStation', 'FnB'], datasets: [{ label: 'Income (Rp)', data: [psTotal, fnbTotal], backgroundColor: ['#3b82f6', '#facc15'] }] },
-                options: { maintainAspectRatio: false, plugins: { title: { display: true, text: 'Income Breakdown', color: '#fff' } } }
+                data: { labels: ['PlayStation', 'FnB'], datasets: [{ label: 'Rp', data: [psTotal, fnbTotal], backgroundColor: ['#38bdf8', '#fbbf24'] }] },
+                options: { maintainAspectRatio: false, plugins: { legend: { labels: { color: '#94a3b8' } } } }
             });
         }
 
@@ -171,12 +179,11 @@
             e.target.reset();
         });
 
-        // Setup Month selector
         const select = document.getElementById('monthSelector');
         ['2026-06', '2026-05', '2026-04'].forEach(m => {
             const opt = document.createElement('option');
             opt.value = m;
-            opt.textContent = new Date(m+'-01').toLocaleDateString('en-US', {month:'long', year:'numeric'});
+            opt.textContent = new Date(m+'-01').toLocaleDateString('id-ID', {month:'long', year:'numeric'});
             select.appendChild(opt);
         });
 
