@@ -29,22 +29,18 @@
 </head>
 <body class="bg-midnight text-slate-200 min-h-screen flex flex-col">
 
-    <!-- Top Navigation -->
     <nav class="bg-midnightLight border-b border-midnightBorder sticky top-0 z-50 shadow-md">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
             <div class="flex items-center gap-3">
                 <div class="bg-brandYellow text-midnight p-2 rounded-lg"><i class="fa-solid fa-gamepad"></i></div>
                 <h1 class="text-xl font-bold text-white">SKYZONE<span class="text-brandYellow"> DASHBOARD</span></h1>
             </div>
-            <div class="flex items-center gap-2">
-                <select id="monthSelector" onchange="refreshDashboard()" class="bg-midnight border border-midnightBorder text-white rounded-lg px-3 py-1.5 focus:ring-2 focus:ring-brandYellow">
-                </select>
-            </div>
+            <select id="monthSelector" onchange="refreshDashboard()" class="bg-midnight border border-midnightBorder text-white rounded-lg px-3 py-1.5 focus:ring-2 focus:ring-brandYellow">
+            </select>
         </div>
     </nav>
 
     <main class="flex-grow max-w-7xl mx-auto px-4 py-8 w-full space-y-6">
-        <!-- KPIs -->
         <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
             <div class="bg-midnightLight p-6 rounded-xl border-l-4 border-brandYellow"><p class="text-xs text-slate-400">Net Profit</p><h3 class="text-xl font-bold text-white" id="kpi-net-profit">Rp 0</h3></div>
             <div class="bg-midnightLight p-6 rounded-xl border-l-4 border-green-500"><p class="text-xs text-slate-400">Income</p><h3 class="text-xl font-bold text-green-400" id="kpi-total-income">Rp 0</h3></div>
@@ -54,10 +50,9 @@
 
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <div class="bg-midnightLight rounded-xl p-6 border border-midnightBorder lg:col-span-2 h-80"><canvas id="dailyChart"></canvas></div>
-            <div class="bg-midnightLight rounded-xl p-6 border border-midnightBorder"><canvas id="revenueChart"></canvas></div>
+            <div class="bg-midnightLight rounded-xl p-6 border border-midnightBorder h-80"><canvas id="revenueChart"></canvas></div>
         </div>
 
-        <!-- Form & List -->
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <div class="bg-midnightLight rounded-xl p-6 border border-midnightBorder">
                 <h2 class="font-bold text-white mb-4">Add Transaction</h2>
@@ -91,24 +86,6 @@
             refreshDashboard();
         }
 
-        function populateMonths() {
-            const select = document.getElementById('monthSelector');
-            const months = ['2026-06', '2026-05', '2026-04', '2026-03'];
-            months.forEach(m => {
-                const opt = document.createElement('option');
-                opt.value = m;
-                opt.textContent = new Date(m+'-01').toLocaleDateString('en-US', {month:'long', year:'numeric'});
-                select.appendChild(opt);
-            });
-        }
-
-        function deleteTransaction(id) {
-            if (confirm('Delete this transaction?')) {
-                transactions = transactions.filter(t => t.id !== id);
-                saveAndRefresh();
-            }
-        }
-
         function refreshDashboard() {
             const selectedMonth = document.getElementById('monthSelector').value;
             const filtered = transactions.filter(t => t.date.startsWith(selectedMonth));
@@ -134,9 +111,7 @@
                     <td class="p-4">${t.description}</td>
                     <td class="p-4 text-right ${t.type === 'income' ? 'text-green-400' : 'text-red-400'}">${t.type === 'income' ? '+' : '-'} Rp ${t.amount.toLocaleString()}</td>
                     <td class="p-4 text-center">
-                        <button onclick="deleteTransaction(${t.id})" class="text-slate-500 hover:text-red-500 transition">
-                            <i class="fa-solid fa-trash"></i>
-                        </button>
+                        <button onclick="deleteTransaction(${t.id})" class="text-slate-500 hover:text-red-500 transition"><i class="fa-solid fa-trash"></i></button>
                     </td>
                 </tr>
             `).join('');
@@ -148,88 +123,57 @@
 
             const monthStr = document.getElementById('monthSelector').value;
             const daysInMonth = new Date(monthStr.split('-')[0], monthStr.split('-')[1], 0).getDate();
-            const labels = Array.from({length: daysInMonth}, (_, i) => i + 1);
             const dailyIncome = new Array(daysInMonth).fill(0);
             const dailyExpense = new Array(daysInMonth).fill(0);
 
+            let psTotal = 0, fnbTotal = 0;
+
             data.forEach(t => {
                 const day = parseInt(t.date.split('-')[2]);
-                if (t.type === 'income') dailyIncome[day - 1] += t.amount;
-                else dailyExpense[day - 1] += t.amount;
+                if (t.type === 'income') {
+                    dailyIncome[day - 1] += t.amount;
+                    if (t.category.trim() === 'PlayStation') psTotal += t.amount;
+                    if (t.category.trim() === 'FnB') fnbTotal += t.amount;
+                } else {
+                    dailyExpense[day - 1] += t.amount;
+                }
             });
 
             dailyChartInstance = new Chart(document.getElementById('dailyChart'), {
                 type: 'bar',
-                data: { 
-                    labels: labels, 
-                    datasets: [
-                        { label: 'Income', data: dailyIncome, backgroundColor: '#22c55e' },
-                        { label: 'Expense', data: dailyExpense, backgroundColor: '#ef4444' }
-                    ] 
-                },
-                options: { 
-                    maintainAspectRatio: false,
-                    plugins: { title: { display: true, text: 'Daily Performance', color: '#fff' } }
-                }
-            });
-
-            // Explicit aggregation logic to ensure accuracy
-            let psTotal = 0;
-            let fnbTotal = 0;
-            
-            data.forEach(t => {
-                if (t.type === 'income') {
-                    // Normalize the category string to handle minor case/spacing variations
-                    const cat = t.category.trim();
-                    if (cat === 'PlayStation') {
-                        psTotal += t.amount;
-                    } else if (cat === 'FnB') {
-                        fnbTotal += t.amount;
-                    }
-                }
+                data: { labels: Array.from({length: daysInMonth}, (_, i) => i + 1), datasets: [{ label: 'Income', data: dailyIncome, backgroundColor: '#22c55e' }, { label: 'Expense', data: dailyExpense, backgroundColor: '#ef4444' }] },
+                options: { maintainAspectRatio: false, plugins: { title: { display: true, text: 'Daily Performance', color: '#fff' } } }
             });
 
             revenueChartInstance = new Chart(document.getElementById('revenueChart'), {
-                type: 'doughnut',
-                data: { 
-                    labels: ['PS', 'FnB'], 
-                    datasets: [{ 
-                        data: [psTotal, fnbTotal], 
-                        backgroundColor: ['#3b82f6', '#facc15'] 
-                    }] 
-                },
-                options: { 
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: { labels: { color: '#fff' } }
-                    }
-                }
+                type: 'bar',
+                data: { labels: ['PlayStation', 'FnB'], datasets: [{ label: 'Income (Rp)', data: [psTotal, fnbTotal], backgroundColor: ['#3b82f6', '#facc15'] }] },
+                options: { maintainAspectRatio: false, plugins: { title: { display: true, text: 'Income Breakdown', color: '#fff' } } }
             });
         }
 
         function updateCategories() {
             const type = document.querySelector('input[name="type"]:checked').value;
-            const cat = document.getElementById('category');
-            cat.innerHTML = type === 'income' ? '<option value="PlayStation">PS</option><option value="FnB">FnB</option>' : '<option value="Utility">Utility</option><option value="Ops">Ops</option>';
+            document.getElementById('category').innerHTML = type === 'income' ? '<option value="PlayStation">PlayStation</option><option value="FnB">FnB</option>' : '<option value="Utility">Utility</option><option value="Ops">Ops</option>';
         }
 
         document.getElementById('transactionForm').addEventListener('submit', (e) => {
             e.preventDefault();
-            transactions.push({
-                id: Date.now(),
-                type: document.querySelector('input[name="type"]:checked').value,
-                category: document.getElementById('category').value,
-                amount: parseFloat(document.getElementById('amount').value),
-                date: document.getElementById('date').value,
-                description: document.getElementById('description').value
-            });
+            transactions.push({ id: Date.now(), type: document.querySelector('input[name="type"]:checked').value, category: document.getElementById('category').value, amount: parseFloat(document.getElementById('amount').value), date: document.getElementById('date').value, description: document.getElementById('description').value });
             saveAndRefresh();
             e.target.reset();
-            updateCategories();
+        });
+
+        // Setup Month selector
+        const select = document.getElementById('monthSelector');
+        ['2026-06', '2026-05', '2026-04'].forEach(m => {
+            const opt = document.createElement('option');
+            opt.value = m;
+            opt.textContent = new Date(m+'-01').toLocaleDateString('en-US', {month:'long', year:'numeric'});
+            select.appendChild(opt);
         });
 
         document.getElementById('date').value = new Date().toISOString().split('T')[0];
-        populateMonths();
         updateCategories();
         refreshDashboard();
     </script>
