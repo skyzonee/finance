@@ -83,8 +83,14 @@
     </main>
 
     <script>
-        let transactions = [];
+        // Load data from LocalStorage
+        let transactions = JSON.parse(localStorage.getItem('skyzone_transactions')) || [];
         let dailyChartInstance, revenueChartInstance;
+
+        function saveAndRefresh() {
+            localStorage.setItem('skyzone_transactions', JSON.stringify(transactions));
+            refreshDashboard();
+        }
 
         function populateMonths() {
             const select = document.getElementById('monthSelector');
@@ -100,7 +106,7 @@
         function deleteTransaction(id) {
             if (confirm('Delete this transaction?')) {
                 transactions = transactions.filter(t => t.id !== id);
-                refreshDashboard();
+                saveAndRefresh();
             }
         }
 
@@ -141,7 +147,6 @@
             if (dailyChartInstance) dailyChartInstance.destroy();
             if (revenueChartInstance) revenueChartInstance.destroy();
 
-            // Prepare Daily Data
             const daysInMonth = new Date(monthStr.split('-')[0], monthStr.split('-')[1], 0).getDate();
             const labels = Array.from({length: daysInMonth}, (_, i) => i + 1);
             const dailyIncome = new Array(daysInMonth).fill(0);
@@ -168,7 +173,6 @@
                 }
             });
 
-            // Revenue Source Breakdown
             let ps = 0, fnb = 0;
             data.filter(t => t.type === 'income').forEach(t => {
                 if(t.category === 'PlayStation') ps += t.amount;
@@ -198,7 +202,7 @@
                 date: document.getElementById('date').value,
                 description: document.getElementById('description').value
             });
-            refreshDashboard();
+            saveAndRefresh();
             e.target.reset();
             updateCategories();
         });
