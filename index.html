@@ -53,7 +53,7 @@
         </div>
 
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <div class="bg-midnightLight rounded-xl p-6 border border-midnightBorder lg:col-span-2 h-80"><canvas id="cashflowChart"></canvas></div>
+            <div class="bg-midnightLight rounded-xl p-6 border border-midnightBorder lg:col-span-2 h-80"><canvas id="dailyChart"></canvas></div>
             <div class="bg-midnightLight rounded-xl p-6 border border-midnightBorder"><canvas id="revenueChart"></canvas></div>
         </div>
 
@@ -84,7 +84,7 @@
 
     <script>
         let transactions = [];
-        let cashflowChartInstance, revenueChartInstance;
+        let dailyChartInstance, revenueChartInstance;
 
         function populateMonths() {
             const select = document.getElementById('monthSelector');
@@ -109,7 +109,7 @@
             const filtered = transactions.filter(t => t.date.startsWith(selectedMonth));
             updateKPIs(filtered);
             renderTable(filtered);
-            updateCharts(filtered);
+            updateCharts(filtered, selectedMonth);
         }
 
         function updateKPIs(data) {
@@ -123,7 +123,7 @@
 
         function renderTable(data) {
             const tbody = document.getElementById('transactionTableBody');
-            tbody.innerHTML = data.map(t => `
+            tbody.innerHTML = data.sort((a,b) => new Date(b.date) - new Date(a.date)).map(t => `
                 <tr class="border-t border-midnightBorder">
                     <td class="p-4">${t.date}</td>
                     <td class="p-4">${t.description}</td>
@@ -137,20 +137,42 @@
             `).join('');
         }
 
-        function updateCharts(data) {
-            if (cashflowChartInstance) cashflowChartInstance.destroy();
+        function updateCharts(data, monthStr) {
+            if (dailyChartInstance) dailyChartInstance.destroy();
             if (revenueChartInstance) revenueChartInstance.destroy();
 
+            // Prepare Daily Data
+            const daysInMonth = new Date(monthStr.split('-')[0], monthStr.split('-')[1], 0).getDate();
+            const labels = Array.from({length: daysInMonth}, (_, i) => i + 1);
+            const dailyIncome = new Array(daysInMonth).fill(0);
+            const dailyExpense = new Array(daysInMonth).fill(0);
+
+            data.forEach(t => {
+                const day = parseInt(t.date.split('-')[2]);
+                if (t.type === 'income') dailyIncome[day - 1] += t.amount;
+                else dailyExpense[day - 1] += t.amount;
+            });
+
+            dailyChartInstance = new Chart(document.getElementById('dailyChart'), {
+                type: 'bar',
+                data: { 
+                    labels: labels, 
+                    datasets: [
+                        { label: 'Income', data: dailyIncome, backgroundColor: '#22c55e' },
+                        { label: 'Expense', data: dailyExpense, backgroundColor: '#ef4444' }
+                    ] 
+                },
+                options: { 
+                    maintainAspectRatio: false,
+                    plugins: { title: { display: true, text: 'Daily Performance', color: '#fff' } }
+                }
+            });
+
+            // Revenue Source Breakdown
             let ps = 0, fnb = 0;
             data.filter(t => t.type === 'income').forEach(t => {
                 if(t.category === 'PlayStation') ps += t.amount;
                 if(t.category === 'FnB') fnb += t.amount;
-            });
-
-            cashflowChartInstance = new Chart(document.getElementById('cashflowChart'), {
-                type: 'bar',
-                data: { labels: ['Income', 'Expense'], datasets: [{ data: [data.filter(t=>t.type==='income').reduce((a,b)=>a+b.amount,0), data.filter(t=>t.type==='expense').reduce((a,b)=>a+b.amount,0)], backgroundColor: ['#22c55e', '#ef4444'] }] },
-                options: { maintainAspectRatio: false }
             });
 
             revenueChartInstance = new Chart(document.getElementById('revenueChart'), {
