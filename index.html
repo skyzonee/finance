@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SKYZONE GAMING STATION - Cash Management</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        midnight: '#0f172a',
+                        midnightLight: '#1e293b',
+                        midnightBorder: '#334155', 
+                        brandYellow: '#facc15',
+                        brandYellowHover: '#eab308'
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+    </style>
+</head>
+<body class="bg-midnight text-slate-200 min-h-screen flex flex-col">
+
+    <!-- Top Navigation -->
+    <nav class="bg-midnightLight border-b border-midnightBorder sticky top-0 z-50 shadow-md">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <div class="bg-brandYellow text-midnight p-2 rounded-lg"><i class="fa-solid fa-gamepad"></i></div>
+                <h1 class="text-xl font-bold text-white">SKYZONE<span class="text-brandYellow"> DASHBOARD</span></h1>
+            </div>
+            <div class="flex items-center gap-2">
+                <select id="monthSelector" onchange="refreshDashboard()" class="bg-midnight border border-midnightBorder text-white rounded-lg px-3 py-1.5 focus:ring-2 focus:ring-brandYellow">
+                </select>
+            </div>
+        </div>
+    </nav>
+
+    <main class="flex-grow max-w-7xl mx-auto px-4 py-8 w-full space-y-6">
+        <!-- KPIs -->
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+            <div class="bg-midnightLight p-6 rounded-xl border-l-4 border-brandYellow"><p class="text-xs text-slate-400">Net Profit</p><h3 class="text-xl font-bold text-white" id="kpi-net-profit">Rp 0</h3></div>
+            <div class="bg-midnightLight p-6 rounded-xl border-l-4 border-green-500"><p class="text-xs text-slate-400">Income</p><h3 class="text-xl font-bold text-green-400" id="kpi-total-income">Rp 0</h3></div>
+            <div class="bg-midnightLight p-6 rounded-xl border-l-4 border-red-500"><p class="text-xs text-slate-400">Expenses</p><h3 class="text-xl font-bold text-red-400" id="kpi-total-expense">Rp 0</h3></div>
+            <div class="bg-midnightLight p-6 rounded-xl border-l-4 border-blue-500"><p class="text-xs text-slate-400">Transactions</p><h3 class="text-xl font-bold text-blue-400" id="kpi-total-trx">0</h3></div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div class="bg-midnightLight rounded-xl p-6 border border-midnightBorder lg:col-span-2 h-80"><canvas id="cashflowChart"></canvas></div>
+            <div class="bg-midnightLight rounded-xl p-6 border border-midnightBorder"><canvas id="revenueChart"></canvas></div>
+        </div>
+
+        <!-- Form & List -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div class="bg-midnightLight rounded-xl p-6 border border-midnightBorder">
+                <h2 class="font-bold text-white mb-4">Add Transaction</h2>
+                <form id="transactionForm" class="space-y-3">
+                    <div class="flex gap-2">
+                        <label class="flex-1 text-center py-2 bg-midnight rounded cursor-pointer border border-midnightBorder has-[:checked]:border-brandYellow"><input type="radio" name="type" value="income" checked class="hidden" onchange="updateCategories()"> Income</label>
+                        <label class="flex-1 text-center py-2 bg-midnight rounded cursor-pointer border border-midnightBorder has-[:checked]:border-brandYellow"><input type="radio" name="type" value="expense" class="hidden" onchange="updateCategories()"> Expense</label>
+                    </div>
+                    <select id="category" class="w-full bg-midnight border border-midnightBorder p-2 rounded text-white"></select>
+                    <input type="number" id="amount" placeholder="Amount (Rp)" class="w-full bg-midnight border border-midnightBorder p-2 rounded text-white" required>
+                    <input type="date" id="date" class="w-full bg-midnight border border-midnightBorder p-2 rounded text-white" required>
+                    <textarea id="description" placeholder="Description" class="w-full bg-midnight border border-midnightBorder p-2 rounded text-white" required></textarea>
+                    <button class="w-full bg-brandYellow text-midnight font-bold py-2 rounded">Save</button>
+                </form>
+            </div>
+            <div class="lg:col-span-2 bg-midnightLight rounded-xl border border-midnightBorder overflow-hidden">
+                <table class="w-full text-left">
+                    <thead class="bg-midnight"><tr><th class="p-4 text-xs uppercase text-slate-400">Date</th><th class="p-4 text-xs uppercase text-slate-400">Desc</th><th class="p-4 text-xs uppercase text-slate-400 text-right">Amount</th><th class="p-4 text-xs uppercase text-slate-400 text-center">Action</th></tr></thead>
+                    <tbody id="transactionTableBody"></tbody>
+                </table>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        let transactions = [];
+        let cashflowChartInstance, revenueChartInstance;
+
+        function populateMonths() {
+            const select = document.getElementById('monthSelector');
+            const months = ['2026-06', '2026-05', '2026-04', '2026-03'];
+            months.forEach(m => {
+                const opt = document.createElement('option');
+                opt.value = m;
+                opt.textContent = new Date(m+'-01').toLocaleDateString('en-US', {month:'long', year:'numeric'});
+                select.appendChild(opt);
+            });
+        }
+
+        function deleteTransaction(id) {
+            if (confirm('Delete this transaction?')) {
+                transactions = transactions.filter(t => t.id !== id);
+                refreshDashboard();
+            }
+        }
+
+        function refreshDashboard() {
+            const selectedMonth = document.getElementById('monthSelector').value;
+            const filtered = transactions.filter(t => t.date.startsWith(selectedMonth));
+            updateKPIs(filtered);
+            renderTable(filtered);
+            updateCharts(filtered);
+        }
+
+        function updateKPIs(data) {
+            let inc = 0, exp = 0;
+            data.forEach(t => t.type === 'income' ? inc += t.amount : exp += t.amount);
+            document.getElementById('kpi-net-profit').textContent = 'Rp ' + (inc - exp).toLocaleString();
+            document.getElementById('kpi-total-income').textContent = 'Rp ' + inc.toLocaleString();
+            document.getElementById('kpi-total-expense').textContent = 'Rp ' + exp.toLocaleString();
+            document.getElementById('kpi-total-trx').textContent = data.length;
+        }
+
+        function renderTable(data) {
+            const tbody = document.getElementById('transactionTableBody');
+            tbody.innerHTML = data.map(t => `
+                <tr class="border-t border-midnightBorder">
+                    <td class="p-4">${t.date}</td>
+                    <td class="p-4">${t.description}</td>
+                    <td class="p-4 text-right ${t.type === 'income' ? 'text-green-400' : 'text-red-400'}">${t.type === 'income' ? '+' : '-'} Rp ${t.amount.toLocaleString()}</td>
+                    <td class="p-4 text-center">
+                        <button onclick="deleteTransaction(${t.id})" class="text-slate-500 hover:text-red-500 transition">
+                            <i class="fa-solid fa-trash"></i>
+                        </button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        function updateCharts(data) {
+            if (cashflowChartInstance) cashflowChartInstance.destroy();
+            if (revenueChartInstance) revenueChartInstance.destroy();
+
+            let ps = 0, fnb = 0;
+            data.filter(t => t.type === 'income').forEach(t => {
+                if(t.category === 'PlayStation') ps += t.amount;
+                if(t.category === 'FnB') fnb += t.amount;
+            });
+
+            cashflowChartInstance = new Chart(document.getElementById('cashflowChart'), {
+                type: 'bar',
+                data: { labels: ['Income', 'Expense'], datasets: [{ data: [data.filter(t=>t.type==='income').reduce((a,b)=>a+b.amount,0), data.filter(t=>t.type==='expense').reduce((a,b)=>a+b.amount,0)], backgroundColor: ['#22c55e', '#ef4444'] }] },
+                options: { maintainAspectRatio: false }
+            });
+
+            revenueChartInstance = new Chart(document.getElementById('revenueChart'), {
+                type: 'doughnut',
+                data: { labels: ['PS', 'FnB'], datasets: [{ data: [ps, fnb], backgroundColor: ['#3b82f6', '#facc15'] }] },
+                options: { maintainAspectRatio: false }
+            });
+        }
+
+        function updateCategories() {
+            const type = document.querySelector('input[name="type"]:checked').value;
+            const cat = document.getElementById('category');
+            cat.innerHTML = type === 'income' ? '<option value="PlayStation">PS</option><option value="FnB">FnB</option>' : '<option value="Utility">Utility</option><option value="Ops">Ops</option>';
+        }
+
+        document.getElementById('transactionForm').addEventListener('submit', (e) => {
+            e.preventDefault();
+            transactions.push({
+                id: Date.now(),
+                type: document.querySelector('input[name="type"]:checked').value,
+                category: document.getElementById('category').value,
+                amount: parseFloat(document.getElementById('amount').value),
+                date: document.getElementById('date').value,
+                description: document.getElementById('description').value
+            });
+            refreshDashboard();
+            e.target.reset();
+            updateCategories();
+        });
+
+        document.getElementById('date').value = new Date().toISOString().split('T')[0];
+        populateMonths();
+        updateCategories();
+        refreshDashboard();
+    </script>
+</body>
+</html>
