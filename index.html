@@ -173,15 +173,19 @@
                 }
             });
 
-            // Calculate PS and FnB totals
+            // Explicit aggregation logic to ensure accuracy
             let psTotal = 0;
             let fnbTotal = 0;
             
-            data.filter(t => t.type === 'income').forEach(t => {
-                if (t.category === 'PlayStation') {
-                    psTotal += t.amount;
-                } else if (t.category === 'FnB') {
-                    fnbTotal += t.amount;
+            data.forEach(t => {
+                if (t.type === 'income') {
+                    // Normalize the category string to handle minor case/spacing variations
+                    const cat = t.category.trim();
+                    if (cat === 'PlayStation') {
+                        psTotal += t.amount;
+                    } else if (cat === 'FnB') {
+                        fnbTotal += t.amount;
+                    }
                 }
             });
 
