@@ -83,7 +83,6 @@
     </main>
 
     <script>
-        // Load data from LocalStorage
         let transactions = JSON.parse(localStorage.getItem('skyzone_transactions')) || [];
         let dailyChartInstance, revenueChartInstance;
 
@@ -115,7 +114,7 @@
             const filtered = transactions.filter(t => t.date.startsWith(selectedMonth));
             updateKPIs(filtered);
             renderTable(filtered);
-            updateCharts(filtered, selectedMonth);
+            updateCharts(filtered);
         }
 
         function updateKPIs(data) {
@@ -143,10 +142,11 @@
             `).join('');
         }
 
-        function updateCharts(data, monthStr) {
+        function updateCharts(data) {
             if (dailyChartInstance) dailyChartInstance.destroy();
             if (revenueChartInstance) revenueChartInstance.destroy();
 
+            const monthStr = document.getElementById('monthSelector').value;
             const daysInMonth = new Date(monthStr.split('-')[0], monthStr.split('-')[1], 0).getDate();
             const labels = Array.from({length: daysInMonth}, (_, i) => i + 1);
             const dailyIncome = new Array(daysInMonth).fill(0);
@@ -173,6 +173,7 @@
                 }
             });
 
+            // STRICTLY use the 'data' passed in (which is already filtered by month)
             let ps = 0, fnb = 0;
             data.filter(t => t.type === 'income').forEach(t => {
                 if(t.category === 'PlayStation') ps += t.amount;
