@@ -173,17 +173,33 @@
                 }
             });
 
-            // STRICTLY use the 'data' passed in (which is already filtered by month)
-            let ps = 0, fnb = 0;
+            // Calculate PS and FnB totals
+            let psTotal = 0;
+            let fnbTotal = 0;
+            
             data.filter(t => t.type === 'income').forEach(t => {
-                if(t.category === 'PlayStation') ps += t.amount;
-                if(t.category === 'FnB') fnb += t.amount;
+                if (t.category === 'PlayStation') {
+                    psTotal += t.amount;
+                } else if (t.category === 'FnB') {
+                    fnbTotal += t.amount;
+                }
             });
 
             revenueChartInstance = new Chart(document.getElementById('revenueChart'), {
                 type: 'doughnut',
-                data: { labels: ['PS', 'FnB'], datasets: [{ data: [ps, fnb], backgroundColor: ['#3b82f6', '#facc15'] }] },
-                options: { maintainAspectRatio: false }
+                data: { 
+                    labels: ['PS', 'FnB'], 
+                    datasets: [{ 
+                        data: [psTotal, fnbTotal], 
+                        backgroundColor: ['#3b82f6', '#facc15'] 
+                    }] 
+                },
+                options: { 
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { labels: { color: '#fff' } }
+                    }
+                }
             });
         }
 
